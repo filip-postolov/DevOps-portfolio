@@ -2,19 +2,21 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: frontend
-  namespace: portfolio
+  labels:
+    app: frontend
 spec:
   replicas: 1
   selector:
     matchLabels:
       app: frontend
   template:
+
     metadata:
       labels:
         app: frontend
     spec:
       containers:
         - name: frontend
-          image: YOUR_ECR/frontend:latest
+          image: 357938784857.dkr.ecr.eu-north-1.amazonaws.com/portfolio-frontend:latest
           ports:
             - containerPort: 80
