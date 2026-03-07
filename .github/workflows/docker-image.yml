@@ -48,18 +48,23 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             IMAGE=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}
-              SHA=${{ github.sha }}
+            SHA=${{ github.sha }}
 
-              # Log in to ECR using IAM user credentials (passed via GitHub secrets)
-              aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
-              aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-              aws configure set region ${{ secrets.AWS_REGION }}
-    
-              aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
-                docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
-    
-              # Deploy
-              kubectl set image deployment/frontend frontend=$IMAGE:$SHA
-              kubectl rollout status deployment/frontend
-              echo "Current running image:"
-              kubectl get deployment frontend -o jsonpath='{.spec.template.spec.containers[0].image}{"\n"}'
+            if ! kubectl get secret ecr-registry >/dev/null 2>&1; then
+            echo "Creating imagePullSecret for ECR..."
+            PASSWORD=$(aws ecr get-login-password --region ${{ secrets.AWS_REGION }})
+            kubectl create secret docker-registry ecr-registry \
+              --docker-server=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com \
+              --docker-username=AWS \
+              --docker-password=$PASSWORD
+            fi
+
+            # Update deployment image
+            echo "Updating deployment with image: $IMAGE:$SHA"
+            kubectl set image deployment/frontend frontend=$IMAGE:$SHA
+
+            # Wait for rollout
+            kubectl rollout status deployment/frontend
+
+            # Show the current image running
+            kubectl get deployment frontend -o jsonpath='{.spec.template.spec.containers[0].image}{"\n"}'
