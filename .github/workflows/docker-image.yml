@@ -1,4 +1,4 @@
-name: Build and Push to ECR
+name: CI-CD Pipeline
 
 on:
   push:
@@ -6,11 +6,12 @@ on:
       - main
 
 jobs:
-  build:
+  build-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Configure AWS credentials
@@ -23,11 +24,13 @@ jobs:
       - name: Login to ECR
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build image
+      - name: Build Docker image
         run: |
           IMAGE=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}
 
-          docker build -t $IMAGE:$GITHUB_SHA -t $IMAGE:latest \
+          docker build \
+            -t $IMAGE:$GITHUB_SHA \
+            -t $IMAGE:latest \
             -f frontend/Dockerfile frontend
 
       - name: Push image
@@ -36,3 +39,18 @@ jobs:
 
           docker push $IMAGE:$GITHUB_SHA
           docker push $IMAGE:latest
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" > ~/.kube/config
+
+      - name: Deploy to Kubernetes
+        run: |
+          IMAGE=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}
+
+          kubectl set image deployment/frontend \
+            frontend=$IMAGE:$GITHUB_SHA
