@@ -41,7 +41,7 @@ jobs:
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/my-app
+            IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/portfolio-frontend
             SHA=${{ github.sha }}
 
             # Create Docker Hub pull secret if it doesn't exist
