@@ -14,50 +14,47 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Login to ECR
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Build Docker image
-        run: |
-          IMAGE=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}
-
-          docker build \
-            -t $IMAGE:$GITHUB_SHA \
-            -t $IMAGE:latest \
-            -f frontend/Dockerfile frontend
-
-      - name: Push image
-        run: |
-          IMAGE=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}
-
-          docker push $IMAGE:$GITHUB_SHA
-          docker push $IMAGE:latest
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/portfolio-frontend:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/portfolio-frontend:${{ github.ref_name }}
 
       - name: Deploy to Kubernetes via SSH
+      
         uses: appleboy/ssh-action@v0.1.6
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            IMAGE=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}
+            IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/my-app
             SHA=${{ github.sha }}
 
-            if ! kubectl get secret ecr-registry >/dev/null 2>&1; then
-            echo "Creating imagePullSecret for ECR..."
-            PASSWORD=$(aws ecr get-login-password --region ${{ secrets.AWS_REGION }})
-            kubectl create secret docker-registry ecr-registry \
-              --docker-server=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com \
-              --docker-username=AWS \
-              --docker-password=$PASSWORD
+            # Create Docker Hub pull secret if it doesn't exist
+            if ! kubectl get secret dockerhub-registry >/dev/null 2>&1; then
+              echo "Creating imagePullSecret for Docker Hub..."
+            kubectl create secret docker-registry dockerhub-registry \
+              --docker-username=${{ secrets.DOCKERHUB_USERNAME }} \
+              --docker-password=${{ secrets.DOCKERHUB_PASSWORD }} \
+              --docker-server=https://index.docker.io/v1/
             fi
+
+            # Patch deployment to use the pull secret
+            kubectl patch serviceaccount default -p '{"imagePullSecrets":[{"name":"dockerhub-registry"}]}'
 
             # Update deployment image
             echo "Updating deployment with image: $IMAGE:$SHA"
