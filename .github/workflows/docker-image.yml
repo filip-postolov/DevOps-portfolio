@@ -47,10 +47,10 @@ jobs:
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            COMMIT_SHA=${GITHUB_SHA}
             IMAGE=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}
-            echo "Updating deployment with image: $IMAGE:$GITHUB_SHA"
-            kubectl set image deployment/frontend frontend=$IMAGE:$GITHUB_SHA
-            echo "Waiting for rollout to complete..."
+            echo "Updating deployment with image: $IMAGE:$COMMIT_SHA"
+            kubectl set image deployment/frontend frontend=$IMAGE:$COMMIT_SHA
             kubectl rollout status deployment/frontend
             echo "Current running image:"
             kubectl get deployment frontend -o jsonpath='{.spec.template.spec.containers[0].image}{"\n"}'
