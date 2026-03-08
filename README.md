@@ -24,21 +24,13 @@ CI/CD: **GitHub Actions**
 
 ## Docker Setup
 
-This project uses a multi-stage Docker build to produce a lightweight production image.
+Build and run locally:
 
-The first stage builds the React application using Node.js, while the second stage serves the static files using Nginx.
-
-Build the image:
-
-**docker build -t devops-portfolio -f frontend/Dockerfile frontend**
-
-Run the container:
-
-**docker run -d -p 8080:80 devops-portfolio**
+**docker-compose up --build -d**
 
 Then open:
 
-**http://localhost:8080**
+**http://localhost:9999/**
 
 ## Live Demo
 
