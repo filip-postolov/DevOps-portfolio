@@ -80,5 +80,5 @@ jobs:
             kubectl rollout status deployment/backend -n portfolio
 
             # Show the current image running
-            kubectl get deployment frontend -o jsonpath='{.spec.template.spec.containers[0].image}{"\n"}'
-            kubectl get deployment backend -o jsonpath='{.spec.template.spec.containers[0].image}{"\n"}'
+            kubectl get deployment frontend -n portfolio -o jsonpath='{.spec.template.spec.containers[0].image}{"\n"}'
+            kubectl get deployment backend -n portfolio -o jsonpath='{.spec.template.spec.containers[0].image}{"\n"}'
