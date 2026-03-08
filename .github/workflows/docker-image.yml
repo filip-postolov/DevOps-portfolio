@@ -22,6 +22,16 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Build and push backend Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/portfolio-backend:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/portfolio-backend:${{ github.ref_name }}
           
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -42,6 +52,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/portfolio-frontend
+            BACKEND_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/portfolio-backend
             SHA=${{ github.sha }}
 
             # Create Docker Hub pull secret if it doesn't exist
@@ -60,8 +71,14 @@ jobs:
             echo "Updating deployment with image: $IMAGE:$SHA"
             kubectl set image deployment/frontend frontend=$IMAGE:$SHA
 
+            # Update backend deployment
+            echo "Updating backend deployment with image: $BACKEND_IMAGE:$SHA"
+            kubectl set image deployment/backend backend=$BACKEND_IMAGE:$SHA
+
             # Wait for rollout
             kubectl rollout status deployment/frontend
+            kubectl rollout status deployment/backend
 
             # Show the current image running
             kubectl get deployment frontend -o jsonpath='{.spec.template.spec.containers[0].image}{"\n"}'
+            kubectl get deployment backend -o jsonpath='{.spec.template.spec.containers[0].image}{"\n"}'
