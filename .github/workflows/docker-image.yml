@@ -67,17 +67,17 @@ jobs:
             # Patch deployment to use the pull secret
             kubectl patch serviceaccount default -p '{"imagePullSecrets":[{"name":"dockerhub-registry"}]}'
 
-            # Update deployment image
-            echo "Updating deployment with image: $IMAGE:$SHA"
-            kubectl set image deployment/frontend frontend=$IMAGE:$SHA
+            # Update frontend deployment
+            echo "Updating frontend deployment with image: $IMAGE:$SHA"
+            kubectl set image deployment/frontend frontend=$IMAGE:$SHA -n portfolio
 
             # Update backend deployment
             echo "Updating backend deployment with image: $BACKEND_IMAGE:$SHA"
-            kubectl set image deployment/backend backend=$BACKEND_IMAGE:$SHA
+            kubectl set image deployment/backend backend=$BACKEND_IMAGE:$SHA -n portfolio
 
             # Wait for rollout
-            kubectl rollout status deployment/frontend
-            kubectl rollout status deployment/backend
+            kubectl rollout status deployment/frontend -n portfolio
+            kubectl rollout status deployment/backend -n portfolio
 
             # Show the current image running
             kubectl get deployment frontend -o jsonpath='{.spec.template.spec.containers[0].image}{"\n"}'
