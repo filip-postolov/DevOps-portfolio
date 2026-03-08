@@ -15,6 +15,6 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: filip2455/portfolio-frontend:latest
+          image: filip2455/portfolio-frontend:main
           ports:
             - containerPort: 80
