@@ -19,6 +19,6 @@ spec:
         - name: ecr-registry
       containers:
         - name: frontend
-          image: 357938784857.dkr.ecr.eu-north-1.amazonaws.com/portfolio-frontend:7397261f23e6260014ee8d21cc6d08a9a7de31b9
+          image: filip2455/portfolio-frontend:main
           ports:
             - containerPort: 80
