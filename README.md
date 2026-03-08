@@ -34,7 +34,7 @@ Build the image:
 
 Run the container:
 
-**docker run -p 8080:80 devops-portfolio**
+**docker run -d -p 8080:80 devops-portfolio**
 
 Then open:
 
