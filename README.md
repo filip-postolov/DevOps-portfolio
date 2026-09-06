@@ -32,8 +32,3 @@ Then open:
 
 **http://localhost:9999/**
 
-## Live Demo
-
-You can view the deployed application here:
-
-🔗 **Live Demo:** **http://16.170.15.52:30003/**
